@@ -1,0 +1,16 @@
+{
+    "name": "inteleon/dibs-client",
+    "description": "Dibs Client",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Andreas Tylegard",
+            "email": "andtyl@gmail.com"
+        }
+    ],
+    "autoload": {
+        "psr-4": {
+            "Inteleon\\Dibs\\": "src/"
+        }
+    }
+}
