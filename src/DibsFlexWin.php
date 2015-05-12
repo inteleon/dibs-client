@@ -107,7 +107,9 @@ class DibsFlexWin
 
         $params = array_merge($params, $custom_params);
 
-        $params["md5key"] = $this->calculateMD5(array("merchant" => $params['merchant'], "orderid" => $params['orderid'], "currency" => $params['currency'], "amount" => $params['amount']));
+        if (!array_key_exists('maketicket', $params)) {
+            $params["md5key"] = $this->calculateMD5(array("merchant" => $params['merchant'], "orderid" => $params['orderid'], "currency" => $params['currency'], "amount" => $params['amount']));
+        }
 
         return $params;
     }
@@ -309,7 +311,7 @@ class DibsFlexWin
      * Drar belopp från kundens kort.
      *
      */
-    protected function captureTransaction($amount, $orderid, $transact)
+    public function captureTransaction($amount, $orderid, $transact)
     {
         $params = array(
             "amount" => $amount,
@@ -331,7 +333,7 @@ class DibsFlexWin
      * Krediterar ett kunds kort, dvs gör en återbetalning.
      *
      */
-    protected function refundTransaction($amount, $orderid, $transact)
+    public function refundTransaction($amount, $orderid, $transact)
     {
         $params = array(
             "amount" => $amount,
@@ -350,7 +352,7 @@ class DibsFlexWin
     }
 
 
-    protected function deleteTicket($ticket)
+    public function deleteTicket($ticket)
     {
         $params = array(
             "merchant" => $this->config['merchant_id'],
