@@ -64,7 +64,7 @@ class CurlRequest implements RequestContract
         if ($this->url == null) {
             throw new DibsConnectionException("No valid url: {$this->url}");
         }
-        $request = [
+        $request = array(
             CURLOPT_POST           => true,
             CURLOPT_RETURNTRANSFER => true,
             CURLOPT_HEADER         => false,
@@ -72,7 +72,7 @@ class CurlRequest implements RequestContract
             // CURLOPT_NOSIGNAL       => true,
             CURLOPT_URL            => $this->url,
             CURLOPT_POSTFIELDS     => $body,
-        ];
+        );
 
         $curlopts = $this->curl_config + $request;
 
