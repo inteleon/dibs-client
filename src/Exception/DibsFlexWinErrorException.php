@@ -38,8 +38,8 @@ class DibsFlexWinErrorException extends DibsErrorException
     private function getFromCode($code)
     {
         if (array_key_exists($code, self::$errors_payment_handling)) {
-            return self::$errors_payment_handling[$code];
+            return "[$code]: " . self::$errors_payment_handling[$code];
         }
-        return (string)$code;
+        return "[$code]";
     }
 }

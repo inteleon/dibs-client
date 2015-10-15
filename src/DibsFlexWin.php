@@ -484,7 +484,7 @@ class DibsFlexWin
      */
     public function isTest()
     {
-        if (isset($this->config['test'])) {
+        if (isset($this->config['test']) && $this->config['test'] == true) {
             return true;
         }
         return false;
@@ -501,7 +501,7 @@ class DibsFlexWin
             "merchant"  => $this->config['merchant_id'],
         );
         if ($this->isTest()) {
-            $params['test'] = "1";
+            $default['test'] = "1";
         }
         if (!empty($optional)) {
             return array_merge($default, $optional);

@@ -139,7 +139,10 @@ class DibsFlexWinTest extends TestSuite
             $result = $client->captureTransaction($amount, $orderid, $transact);
             $this->fail('Expected DibsFlexWinErrorException expcetion');
         } catch (DibsFlexWinErrorException $e) {
-            $this->assertEquals('Credit card expired.', $e->getMessage());
+            $this->assertRegExp(
+                '/Credit card expired/',
+                $e->getMessage()
+            );
             $this->assertEquals(3, $e->getCode());
         }
     }
