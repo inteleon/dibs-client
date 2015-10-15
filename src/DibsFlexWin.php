@@ -5,10 +5,7 @@ namespace Inteleon\Dibs;
 use Inteleon\Dibs\Request\CurlRequest;
 use Inteleon\Dibs\Request\RequestContract;
 use Inteleon\Dibs\Exception\DibsErrorException;
-use Inteleon\Dibs\Exception\DibsFlexWinException;
 use Inteleon\Dibs\Exception\DibsFlexWinErrorException;
-use Inteleon\Dibs\Exception\DibsFlexWinPaymentException;
-use Inteleon\Dibs\Exception\DibsFlexWinAuthorizationException;
 
 /**
  * DIBS FlexWin Payment handling
@@ -43,10 +40,9 @@ class DibsFlexWin
 
     /**
      *
-     * @param array  $config
-     * @param \Inteleon\Dibs\Request\RequestContract $request optional
-     *                                               default method is with
-     *                                               curl
+     * @param array                                  $config
+     * @param \Inteleon\Dibs\Request\RequestContract $request
+     * optional default method is with curl
      */
     public function __construct(array $config, $request = null)
     {
@@ -80,9 +76,9 @@ class DibsFlexWin
     /**
      * Charge card
      *
-     * @param string $amount
-     * @param string $orderid
-     * @param string $ticket
+     * @param  string $amount
+     * @param  string $orderid
+     * @param  string $ticket
      * @return array Result from DIBS capture.cgi
      */
     public function chargeCard($amount, $orderid, $ticket)
@@ -91,14 +87,14 @@ class DibsFlexWin
 
         if ($result_params["status"] == "DECLINED") {
             $message = isset($result_params["message"]) ? $result_params["message"] : "DECLINED";
-            throw new DibsFlexWinAuthorizationException($message, $result_params["reason"]);
+            throw new DibsFlexWinErrorException($message, $result_params["reason"]);
         }
 
         $result_params = $this->captureTransaction($amount, $orderid, $result_params["transact"]);
 
         if ($result_params["status"] == "DECLINED") {
             $message = isset($result_params["message"]) ? $result_params["message"] : "DECLINED";
-            throw new DibsFlexWinPaymentException($message, $result_params["reason"]);
+            throw new DibsFlexWinErrorException($message, $result_params["reason"]);
         }
 
         return $result_params;
@@ -108,9 +104,9 @@ class DibsFlexWin
     /**
      * Refund card
      *
-     * @param string $amount
-     * @param string $orderid
-     * @param string $transact
+     * @param  string $amount
+     * @param  string $orderid
+     * @param  string $transact
      * @return array Result from DIBS refund.cgi
      */
     public function refundCard($amount, $orderid, $transact)
@@ -119,7 +115,7 @@ class DibsFlexWin
 
         if ($result_params["result"] != "1000" && $result_params["result"] != "0") {
             $message = isset($result_params["message"]) ? $result_params["message"] : "DECLINED";
-            throw new DibsFlexWinPaymentException($message, $result_params["result"]);
+            throw new DibsFlexWinErrorException($message, $result_params["result"]);
         }
 
         return $result_params;
@@ -135,29 +131,36 @@ class DibsFlexWin
         return "https://payment.architrade.com/paymentweb/start.action";
     }
 
-
+    /**
+     * Build parameters for getFlexWinUrl() POST
+     *
+     * @param integer $amount
+     * @param integer $orderid
+     * @param bool    $preauth
+     * @param array   $custom_params
+     *
+     * @return array
+     */
     public function getFlexWinParams($amount, $orderid, $preauth = false, $custom_params = array())
     {
-        $params = array(
+        $parameters = array_merge(
+            array(
             "accepturl"     => $this->config['accept_return_url'],
             "amount"        => $amount,
             "callbackurl"   => $this->config['callback_url'],
             "cancelurl"     => $this->config['cancel_return_url'],
             "currency"      => $this->config['currency_code'],
             "lang"          => $this->config['language'],
-            "merchant"      => $this->config['merchant_id'],
             "orderid"       => $orderid,
+            ),
+            $custom_params
         );
 
-        if ($preauth) {
+        $params = $this->defaultParameters($parameters);
+
+        if ($preauth == true) {
             $params['preauth'] = "true";
         }
-
-        if ($this->config['test']) {
-            $params['test'] = "1";
-        }
-
-        $params = array_merge($params, $custom_params);
 
         if (!array_key_exists('maketicket', $params)) {
             $params["md5key"] = $this->calculateMD5(
@@ -174,6 +177,11 @@ class DibsFlexWin
     }
 
 
+    /**
+     * @param  array $params
+     *
+     * @return array
+     */
     public function getFlexWinResultParams($params = null)
     {
         if ($params === null) {
@@ -190,9 +198,8 @@ class DibsFlexWin
                     )
             );
             if ($params['authkey'] != $hash) {
-                throw new DibsFlexWinException("Invalid MD5 for response");
+                throw new DibsFlexWinErrorException("Invalid MD5 for response");
             }
-
         } else {
             //Verify the MD5 for the response
             $response = $this->calculateMD5(
@@ -203,9 +210,8 @@ class DibsFlexWin
                     )
             );
             if ($params['authkey'] != $response) {
-                throw new DibsFlexWinException("Invalid MD5 for response");
+                throw new DibsFlexWinErrorException("Invalid MD5 for response");
             }
-
         }
 
         return $params;
@@ -214,9 +220,10 @@ class DibsFlexWin
 
     /**
      * Calculate md5 hash
+     *
      * @link http://tech.dibspayment.com/D2/FlexWin/API/MD5
      *
-     * @param  array $params
+     * @param array $params
      *
      * @return string
      */
@@ -228,7 +235,7 @@ class DibsFlexWin
     /**
      * @link http://tech.dibspayment.com/D2/FlexWin/API/MD5
      *
-     * @param  array $params
+     * @param  array  $params
      * @param  string $function_name
      *
      * @return string
@@ -239,61 +246,43 @@ class DibsFlexWin
             case "3dsecure.cgi":
             case "auth.cgi":
                 $md5_params = array(
-                    "merchant" => $params['merchant'],
-                    "orderid"  => $params['orderid'],
-                    "currency" => $params['currency'],
-                    "amount"   => $params['amount'],
+                "merchant" => $params['merchant'],
+                "orderid"  => $params['orderid'],
+                "currency" => $params['currency'],
+                "amount"   => $params['amount'],
                 );
                 break;
             case "cancel.cgi":
                 $md5_params = array(
-                    "merchant" => $params['merchant'],
-                    "orderid"  => $params['orderid'],
-                    "transact" => $params['transact'],
-                    "amount"   => $params['amount'],
+                "merchant" => $params['merchant'],
+                "orderid"  => $params['orderid'],
+                "transact" => $params['transact'],
+                "amount"   => $params['amount'],
                 );
                 break;
             case "capture.cgi":
             case "refund.cgi":
             case "suppl_auth.cgi":
                 $md5_params = array(
-                    "merchant" => $params['merchant'],
-                    "orderid"  => $params['orderid'],
-                    "transact" => $params['transact'],
-                    "amount"   => $params['amount'],
+                "merchant" => $params['merchant'],
+                "orderid"  => $params['orderid'],
+                "transact" => $params['transact'],
+                "amount"   => $params['amount'],
                 );
                 break;
             case "ticket_auth.cgi":
                 $md5_params = array(
-                    "merchant" => $params['merchant'],
-                    "orderid"  => $params['orderid'],
-                    "ticket"   => $params['ticket'],
-                    "currency" => $params['currency'],
-                    "amount"   => $params['amount'],
+                "merchant" => $params['merchant'],
+                "orderid"  => $params['orderid'],
+                "ticket"   => $params['ticket'],
+                "currency" => $params['currency'],
+                "amount"   => $params['amount'],
                 );
                 break;
             case "delticket.cgi":
                 return false;
             default:
-                throw new DibsFlexWinException("Invalid API function name for MD5 calculation (request)");
-        }
-
-        return $this->calculateMD5($md5_params);
-    }
-
-
-    protected function calculateMD5ForApiResponse($params, $return_params, $function_name)
-    {
-        switch ($function_name) {
-            case "ticket_auth.cgi":
-                $md5_params = array(
-                    "transact" => $return_params['transact'],
-                    "amount" => $params['amount'],
-                    "currency" => $params['currency'],
-                );
-                break;
-            default:
-                throw new DibsFlexWinException("Invalid API function name for MD5 calculation (response)");
+                throw new DibsFlexWinErrorException("Invalid API function name for MD5 calculation (request)");
         }
 
         return $this->calculateMD5($md5_params);
@@ -301,12 +290,37 @@ class DibsFlexWin
 
 
     /**
-     * Skickar formulärdatan till DIBS för behandling.
      *
-     * @param string $payment_function
-     * @param string $params
+     * @param  array  $params
+     * @param  array  $return_params
+     * @param  string $function_name
+     *
      * @return string
-     * @throws DibsFlexWinException
+     */
+    protected function calculateMD5ForApiResponse($params, $return_params, $function_name)
+    {
+        switch ($function_name) {
+            case "ticket_auth.cgi":
+                $md5_params = array(
+                "transact" => $return_params['transact'],
+                "amount" => $params['amount'],
+                "currency" => $params['currency'],
+                );
+                break;
+            default:
+                throw new DibsFlexWinErrorException("Invalid API function name for MD5 calculation (response)");
+        }
+
+        return $this->calculateMD5($md5_params);
+    }
+
+    /**
+     * Send POST request to dibs based on $payment_function
+     *
+     * @param  string $payment_function
+     * @param  string $params
+     * @return string
+     * @throws DibsFlexWinErrorException
      */
     protected function postToDibs($payment_function, $params)
     {
@@ -329,7 +343,7 @@ class DibsFlexWin
                 $post_url = "https://" . $this->config['login_user'] . ":" . $this->config['login_passwd'] . "@payment.architrade.com/cgi-adm/refund.cgi";
                 break;
             default:
-                throw new DibsFlexWinException("Unkown DIBS function");
+                throw new DibsFlexWinErrorException("Unkown DIBS function");
         }
 
         return $this->getRequest()->to($post_url)->post($params)->get();
@@ -337,23 +351,26 @@ class DibsFlexWin
 
     /**
      * Check card and reserve $amount from card
+     *
      * @link http://tech.dibspayment.com/D2_ticketauthcgi
      *
-     * @param  integer $amount
-     * @param  integer $orderid
-     * @param  integer $ticket
+     * @param integer $amount
+     * @param integer $orderid
+     * @param integer $ticket
      *
      * @return array
      */
     public function authorizeTicket($amount, $orderid, $ticket)
     {
-        $params = $this->defaultParameters(array(
+        $params = $this->defaultParameters(
+            array(
             "amount"    => $amount,
             "currency"  => $this->config['currency_code'],
             "orderid"   => $orderid,
             "ticket"    => $ticket,
             "textreply" => 1,
-        ));
+            )
+        );
 
         $result = $this->postToDibs("ticket_auth.cgi", $params);
         if ($result['status'] == 'ACCEPTED') {
@@ -364,11 +381,12 @@ class DibsFlexWin
 
     /**
      * Capture
+     *
      * @link http://tech.dibspayment.com/D2_capturecgi
      *
-     * @param  integer $amount (ISO4217)
-     * @param  integer $orderid
-     * @param  integer $transact DIBS identification number
+     * @param integer $amount   (ISO4217)
+     * @param integer $orderid
+     * @param integer $transact DIBS identification number
      *                          the transact is a as minimum 6-digit integer
      *
      * @throws Inteleon\Dibs\Exception\DibsFlexWinErrorException
@@ -377,12 +395,14 @@ class DibsFlexWin
      */
     public function captureTransaction($amount, $orderid, $transact)
     {
-        $params = $this->defaultParameters(array(
+        $params = $this->defaultParameters(
+            array(
             "amount"    => $amount,
             "orderid"   => $orderid,
             "transact"  => $transact,
             "textreply" => 1,
-        ));
+            )
+        );
         $result = $this->postToDibs("capture.cgi", $params);
 
         if ($result['status'] == 'ACCEPTED') {
@@ -393,23 +413,26 @@ class DibsFlexWin
 
     /**
      * Refund
+     *
      * @link http://tech.dibspayment.com/D2_refundcgi
      *
-     * @param  integer $amount
-     * @param  integer $orderid
-     * @param  integer $transact
+     * @param integer $amount
+     * @param integer $orderid
+     * @param integer $transact
      *
      * @return array
      */
     public function refundTransaction($amount, $orderid, $transact)
     {
-        $params = $this->defaultParameters(array(
+        $params = $this->defaultParameters(
+            array(
             "amount"    => $amount,
             "currency"  => $this->config['currency_code'],
             "orderid"   => $orderid,
             "transact"  => $transact,
             "textreply" => 1,
-        ));
+            )
+        );
 
         return $this->postToDibs("refund.cgi", $params);
     }
@@ -417,9 +440,9 @@ class DibsFlexWin
     /**
      * alias for deleteTicket()
      *
-     * @param  string $ticket
+     * @param string $ticket
      *
-     * @throws DibsFlexWinException
+     * @throws DibsFlexWinErrorException
      *
      * @return array
      */
@@ -428,7 +451,7 @@ class DibsFlexWin
         $result_params = $this->deleteTicket($ticket);
 
         if ($result_params["status"] == "DECLINED") {
-            throw new DibsFlexWinException($result_params["message"]);
+            throw new DibsFlexWinErrorException($result_params["message"]);
         }
 
         return $result_params;
@@ -436,17 +459,20 @@ class DibsFlexWin
 
     /**
      * Delete ticket
+     *
      * @link http://tech.dibspayment.com/D2_delticketcgi
      *
-     * @param  integer $ticket
+     * @param integer $ticket
      *
      * @return array
      */
     public function deleteTicket($ticket)
     {
-        $params = $this->defaultParameters(array(
+        $params = $this->defaultParameters(
+            array(
             "ticket" => $ticket,
-        ));
+            )
+        );
 
         return $this->postToDibs("delticket.cgi", $params);
     }
@@ -465,7 +491,7 @@ class DibsFlexWin
     }
 
     /**
-     * @param  array  $optional
+     * @param  array $optional
      *
      * @return array
      */
@@ -483,6 +509,13 @@ class DibsFlexWin
         return $default;
     }
 
+    /**
+     * Get config attribute
+     *
+     * @param mixed $variable
+     *
+     * @return mixed
+     */
     public function __get($variable)
     {
         if (isset($this->config[$variable])) {
@@ -493,6 +526,7 @@ class DibsFlexWin
 
     /**
      * Dibs status code
+     *
      * @link http://tech.dibspayment.com/nodeaddpage/toolboxstatuscodes
      *
      * @return array

@@ -56,6 +56,7 @@ class CurlRequest implements RequestContract
      * Send a HTTP POST request
      *
      * @param  array  $body
+     * @throws \Inteleon\Dibs\Exception\DibsConnectionException
      *
      * @return array
      */
