@@ -4,15 +4,42 @@ namespace Inteleon\Dibs\Exception;
 
 class DibsFlexWinErrorException extends DibsErrorException
 {
-    public function __construct($code, $previous = null)
+    public function __construct()
     {
-        if (!is_integer($code)) {
-            $message = $code;
-            $code = 1;
+        $args = func_get_args();
+        switch (count($args)) {
+            case 1:
+                $message = $this->getFromCode($args[0]);
+                $code = (int)$args[0];
+                $previous = null;
+                break;
+            case 2:
+                $message = $args[0];
+                $code = (int)$args[1];
+                $previous = $args[2];
+                break;
+            default:
+                $message = $args[0];
+                $code = (int)$args[0];
+                $previous = null;
+                break;
         }
-        if (array_key_exists($code, self::$errors_payment_handling)) {
-            $message = self::$errors_payment_handling[$code];
-        }
+
         parent::__construct($message, $code, $previous);
+    }
+
+    /**
+     * Get dibs error message based on code
+     *
+     * @param  integer $code
+     *
+     * @return string
+     */
+    private function getFromCode($code)
+    {
+        if (array_key_exists($code, self::$errors_payment_handling)) {
+            return self::$errors_payment_handling[$code];
+        }
+        return (string)$code;
     }
 }

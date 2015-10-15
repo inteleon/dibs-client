@@ -19,4 +19,11 @@ interface RequestContract
      * @return mixed
      */
     public function post(array $body);
+
+    /**
+     * Get response
+     *
+     * @return array
+     */
+    public function get();
 }
