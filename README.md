@@ -1,4 +1,5 @@
 # Dibs Client
+[![Build Status](https://travis-ci.org/inteleon/dibs-client.svg)](https://travis-ci.org/inteleon/dibs-client)
 
 For making requests to Dibs webservice. You need an account for Dibs.
 
@@ -11,4 +12,4 @@ This package supports the **D2 Platform/DIBS Payment Window** hosted payment win
 ## Todo
 
 - Documentation
-- Tests
+- Testsing for `Inteleon\Dibs\DibsPaymentWindow`
