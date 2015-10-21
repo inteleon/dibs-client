@@ -69,5 +69,5 @@ class DibsErrorException extends Exception
         return  isset(self::$errors_payment_handling[$code])
                 ? self::$errors_payment_handling[$code]
                 : $code;
-    }    
+    }
 }

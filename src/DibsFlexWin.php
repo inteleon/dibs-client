@@ -5,7 +5,8 @@ namespace Inteleon\Dibs;
 use Inteleon\Dibs\Request\CurlRequest;
 use Inteleon\Dibs\Request\RequestContract;
 use Inteleon\Dibs\Exception\DibsErrorException;
-use Inteleon\Dibs\Exception\DibsFlexWinErrorException;
+use Inteleon\Dibs\Exception\DibsFlexWinAuthException;
+use Inteleon\Dibs\Exception\DibsFlexWinPaymentException;
 
 /**
  * DIBS FlexWin Payment handling
@@ -79,7 +80,7 @@ class DibsFlexWin
      * @param  string $amount
      * @param  string $orderid
      * @param  string $ticket
-     * @throws DibsFlexWinErrorException
+     * @throws DibsFlexWinPaymentException
      *
      * @return array Result from DIBS capture.cgi
      */
@@ -103,7 +104,7 @@ class DibsFlexWin
 
         if ($result_params["result"] != "1000" && $result_params["result"] != "0") {
             $message = isset($result_params["message"]) ? $result_params["message"] : "DECLINED";
-            throw new DibsFlexWinErrorException($message, $result_params["result"]);
+            throw new DibsFlexWinPaymentException($message, $result_params["result"]);
         }
 
         return $result_params;
@@ -186,7 +187,7 @@ class DibsFlexWin
                     )
             );
             if ($params['authkey'] != $hash) {
-                throw new DibsFlexWinErrorException("Invalid MD5 for response");
+                throw new DibsFlexWinPaymentException("Invalid MD5 for response");
             }
         } else {
             //Verify the MD5 for the response
@@ -198,7 +199,7 @@ class DibsFlexWin
                     )
             );
             if ($params['authkey'] != $response) {
-                throw new DibsFlexWinErrorException("Invalid MD5 for response");
+                throw new DibsFlexWinPaymentException("Invalid MD5 for response");
             }
         }
 
@@ -270,7 +271,7 @@ class DibsFlexWin
             case "delticket.cgi":
                 return false;
             default:
-                throw new DibsFlexWinErrorException("Invalid API function name for MD5 calculation (request)");
+                throw new DibsFlexWinPaymentException("Invalid API function name for MD5 calculation (request)");
         }
 
         return $this->calculateMD5($md5_params);
@@ -296,7 +297,7 @@ class DibsFlexWin
                 );
                 break;
             default:
-                throw new DibsFlexWinErrorException("Invalid API function name for MD5 calculation (response)");
+                throw new DibsFlexWinPaymentException("Invalid API function name for MD5 calculation (response)");
         }
 
         return $this->calculateMD5($md5_params);
@@ -308,7 +309,7 @@ class DibsFlexWin
      * @param  string $payment_function
      * @param  string $params
      * @return string
-     * @throws DibsFlexWinErrorException
+     * @throws DibsFlexWinPaymentException
      */
     protected function postToDibs($payment_function, $params)
     {
@@ -331,7 +332,7 @@ class DibsFlexWin
                 $post_url = "https://" . $this->config['login_user'] . ":" . $this->config['login_passwd'] . "@payment.architrade.com/cgi-adm/refund.cgi";
                 break;
             default:
-                throw new DibsFlexWinErrorException("Unkown DIBS function");
+                throw new DibsFlexWinPaymentException("Unkown DIBS function");
         }
 
         return $this->getRequest()->to($post_url)->post($params)->get();
@@ -346,7 +347,7 @@ class DibsFlexWin
      * @param integer $orderid
      * @param integer $ticket
      *
-     * @throws Inteleon\Dibs\Exception\DibsFlexWinErrorException
+     * @throws Inteleon\Dibs\Exception\DibsFlexWinPaymentException
      *
      * @return array
      */
@@ -366,7 +367,7 @@ class DibsFlexWin
         if ($result['status'] == 'ACCEPTED') {
             return $result;
         }
-        throw new DibsFlexWinErrorException($result['reason']);
+        throw new DibsFlexWinAuthException($result['reason']);
     }
 
     /**
@@ -379,7 +380,7 @@ class DibsFlexWin
      * @param integer $transact DIBS identification number
      *                          the transact is a as minimum 6-digit integer
      *
-     * @throws Inteleon\Dibs\Exception\DibsFlexWinErrorException
+     * @throws Inteleon\Dibs\Exception\DibsFlexWinPaymentException
      *
      * @return mixed
      */
@@ -398,7 +399,7 @@ class DibsFlexWin
         if ($result['status'] == 'ACCEPTED') {
             return $result;
         }
-        throw new DibsFlexWinErrorException($result['reason']);
+        throw new DibsFlexWinPaymentException($result['reason']);
     }
 
     /**
@@ -432,7 +433,7 @@ class DibsFlexWin
      *
      * @param string $ticket
      *
-     * @throws DibsFlexWinErrorException
+     * @throws DibsFlexWinPaymentException
      *
      * @return array
      */
@@ -448,7 +449,7 @@ class DibsFlexWin
      *
      * @param integer $ticket
      *
-     * @throws DibsFlexWinErrorException
+     * @throws DibsFlexWinPaymentException
      *
      * @return array
      */
@@ -465,7 +466,7 @@ class DibsFlexWin
         if ($result["status"] == "ACCEPTED") {
             return $result;
         }
-        throw new DibsFlexWinErrorException($result["message"]);
+        throw new DibsFlexWinPaymentException($result["message"]);
     }
 
     /**

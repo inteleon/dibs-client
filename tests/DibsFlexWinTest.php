@@ -6,7 +6,7 @@ use Mockery;
 use Inteleon\Dibs\DibsFlexWin;
 use Inteleon\Dibs\Request\CurlRequest;
 use Inteleon\Dibs\Request\RequestContract;
-use Inteleon\Dibs\Exception\DibsFlexWinErrorException;
+use Inteleon\Dibs\Exception\DibsErrorException;
 use PHPUnit_Framework_TestCase as TestSuite;
 
 class DibsFlexWinTest extends TestSuite
@@ -107,7 +107,7 @@ class DibsFlexWinTest extends TestSuite
      * @test
      * Credit card expired
      *
-     * @throws Inteleon\Dibs\Exception\DibsFlexWinErrorException
+     * @throws Inteleon\Dibs\Exception\DibsErrorException
      */
     public function captureTransactionFailed()
     {
@@ -137,8 +137,8 @@ class DibsFlexWinTest extends TestSuite
         ));
         try {
             $result = $client->captureTransaction($amount, $orderid, $transact);
-            $this->fail('Expected DibsFlexWinErrorException expcetion');
-        } catch (DibsFlexWinErrorException $e) {
+            $this->fail('Expected DibsErrorException expcetion');
+        } catch (DibsErrorException $e) {
             $this->assertRegExp(
                 '/Credit card expired/',
                 $e->getMessage()
@@ -184,7 +184,7 @@ class DibsFlexWinTest extends TestSuite
 
     /**
      * @test
-     * @throws Inteleon\Dibs\Exception\DibsFlexWinErrorException
+     * @throws Inteleon\Dibs\Exception\DibsErrorException
      */
     public function authorizeTicketFailed()
     {
@@ -216,9 +216,9 @@ class DibsFlexWinTest extends TestSuite
                 $orderid,
                 $transact
             );
-            $this->fail('Expected DibsFlexWinErrorException expcetion');
+            $this->fail('Expected DibsErrorException expcetion');
         } catch (\Exception $e) {
-            $this->assertInstanceOf('Inteleon\Dibs\Exception\DibsFlexWinErrorException', $e);
+            $this->assertInstanceOf('Inteleon\Dibs\Exception\DibsErrorException', $e);
         }
     }
 
@@ -296,7 +296,7 @@ class DibsFlexWinTest extends TestSuite
 
     /**
      * @test
-     * @expectedException Inteleon\Dibs\Exception\DibsFlexWinErrorException
+     * @expectedException Inteleon\Dibs\Exception\DibsErrorException
      */
     public function deleteCardFailed()
     {
@@ -332,7 +332,7 @@ class DibsFlexWinTest extends TestSuite
      * @test
      * @depends authorizeTicket
      * @depends captureTransaction
-     * @expectedException Inteleon\Dibs\Exception\DibsFlexWinErrorException
+     * @expectedException Inteleon\Dibs\Exception\DibsErrorException
      */
     public function chargeCardFailed()
     {

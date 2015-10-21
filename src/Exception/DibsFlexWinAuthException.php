@@ -2,7 +2,7 @@
 
 namespace Inteleon\Dibs\Exception;
 
-class DibsFlexWinErrorException extends DibsErrorException
+class DibsFlexWinAuthException extends DibsErrorException
 {
     public function __construct()
     {
@@ -37,8 +37,8 @@ class DibsFlexWinErrorException extends DibsErrorException
      */
     private function getFromCode($code)
     {
-        if (array_key_exists($code, self::$errors_payment_handling)) {
-            return "[$code]: " . self::$errors_payment_handling[$code];
+        if (array_key_exists($code, self::$errors_payment_authorization)) {
+            return "[$code]: " . self::$errors_payment_authorization[$code];
         }
         return "[$code]";
     }
