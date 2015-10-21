@@ -79,27 +79,15 @@ class DibsFlexWin
      * @param  string $amount
      * @param  string $orderid
      * @param  string $ticket
+     * @throws DibsFlexWinErrorException
+     *
      * @return array Result from DIBS capture.cgi
      */
     public function chargeCard($amount, $orderid, $ticket)
     {
-        $result_params = $this->authorizeTicket($amount, $orderid, $ticket);
-
-        if ($result_params["status"] == "DECLINED") {
-            $message = isset($result_params["message"]) ? $result_params["message"] : "DECLINED";
-            throw new DibsFlexWinErrorException($message, $result_params["reason"]);
-        }
-
-        $result_params = $this->captureTransaction($amount, $orderid, $result_params["transact"]);
-
-        if ($result_params["status"] == "DECLINED") {
-            $message = isset($result_params["message"]) ? $result_params["message"] : "DECLINED";
-            throw new DibsFlexWinErrorException($message, $result_params["reason"]);
-        }
-
-        return $result_params;
+        $ticket_return = $this->authorizeTicket($amount, $orderid, $ticket);
+        return $this->captureTransaction($amount, $orderid, $ticket_return["transact"]);
     }
-
 
     /**
      * Refund card
@@ -358,6 +346,8 @@ class DibsFlexWin
      * @param integer $orderid
      * @param integer $ticket
      *
+     * @throws Inteleon\Dibs\Exception\DibsFlexWinErrorException
+     *
      * @return array
      */
     public function authorizeTicket($amount, $orderid, $ticket)
@@ -448,13 +438,7 @@ class DibsFlexWin
      */
     public function deleteCard($ticket)
     {
-        $result_params = $this->deleteTicket($ticket);
-
-        if ($result_params["status"] == "DECLINED") {
-            throw new DibsFlexWinErrorException($result_params["message"]);
-        }
-
-        return $result_params;
+        return $this->deleteTicket($ticket);
     }
 
     /**
@@ -463,6 +447,8 @@ class DibsFlexWin
      * @link http://tech.dibspayment.com/D2_delticketcgi
      *
      * @param integer $ticket
+     *
+     * @throws DibsFlexWinErrorException
      *
      * @return array
      */
@@ -474,7 +460,12 @@ class DibsFlexWin
             )
         );
 
-        return $this->postToDibs("delticket.cgi", $params);
+        $result = $this->postToDibs("delticket.cgi", $params);
+
+        if ($result["status"] == "ACCEPTED") {
+            return $result;
+        }
+        throw new DibsFlexWinErrorException($result["message"]);
     }
 
     /**

@@ -296,8 +296,7 @@ class DibsFlexWinTest extends TestSuite
 
     /**
      * @test
-     *
-     * expectedException Inteleon\Dibs\Exception\DibsFlexWinErrorException
+     * @expectedException Inteleon\Dibs\Exception\DibsFlexWinErrorException
      */
     public function deleteCardFailed()
     {
@@ -324,8 +323,107 @@ class DibsFlexWinTest extends TestSuite
         ->once()
         ->andReturn(array(
             'message' => 'If declined a reason is returned in this parameter.',
-            'status' =>  'ACCEPTED'
+            'status' =>  'DECLINED'
         ));
         $result = $client->deleteCard($ticket);
+    }
+
+    /**
+     * @test
+     * @depends authorizeTicket
+     * @depends captureTransaction
+     * @expectedException Inteleon\Dibs\Exception\DibsFlexWinErrorException
+     */
+    public function chargeCardFailed()
+    {
+        $ticket_return = array(
+            'approvalcode'  => '',
+            'authkey'       => 'authkey',
+            'cardtype'      => '',
+            'fee'           => '',
+            'status'        => 'ACCEPTED',
+            'transact'      => 123456
+        );
+        $capture_return = array(
+            'message'   => '',
+            'reason'    => "7",
+            'result'    => "7",
+            'status'    => 'DECLINED',
+        );
+        $this->chargeCard($ticket_return, $capture_return);
+    }
+
+    /**
+     * Test helper for charge card
+     *
+     * @param  array $ticket_return
+     * @param  array $capture_return
+     *
+     * @return void
+     */
+    private function chargeCard($ticket_return, $capture_return)
+    {
+        $request = Mockery::mock('Inteleon\Dibs\Request\CurlRequest');
+        $client = new DibsFlexWin($this->cfg, $request);
+
+        $amount = 100;
+        $orderid = 1;
+        $ticket = 1;
+
+        // authorizeTicket
+        $request->shouldReceive('to')
+        ->once()
+        ->withArgs(array(
+            'https://payment.architrade.com/cgi-ssl/ticket_auth.cgi',
+        ))->andReturn($request);
+
+        $request->shouldReceive('post')
+        ->once()
+        ->andReturn($request);
+
+        $request->shouldReceive('get')
+        ->once()
+        ->andReturn($ticket_return);
+
+        // Capture transaction
+        $request->shouldReceive('to')
+        ->once()
+        ->withArgs(array(
+            'https://payment.architrade.com/cgi-bin/capture.cgi',
+        ))->andReturn($request);
+
+        $request->shouldReceive('post')
+        ->once()
+        ->andReturn($request);
+
+        $request->shouldReceive('get')
+        ->once()
+        ->andReturn($capture_return);
+
+        $client->chargeCard($amount, $orderid, $ticket);
+    }
+
+    /**
+     * @test
+     * @depends authorizeTicket
+     * @depends captureTransaction
+     */
+    public function chargeCardSuccessfully()
+    {
+        $ticket_return = array(
+            'approvalcode'  => '',
+            'authkey'       => 'authkey',
+            'cardtype'      => '',
+            'fee'           => '',
+            'status'        => 'ACCEPTED',
+            'transact'      => 123456
+        );
+        $capture_return = array(
+            'message'   => '',
+            'reason'    => "0",
+            'result'    => "0",
+            'status'    => 'ACCEPTED',
+        );
+        $this->chargeCard($ticket_return, $capture_return);
     }
 }
