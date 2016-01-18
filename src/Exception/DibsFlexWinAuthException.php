@@ -2,27 +2,29 @@
 
 namespace Inteleon\Dibs\Exception;
 
+use Exception;
+
 class DibsFlexWinAuthException extends DibsErrorException
 {
     public function __construct()
     {
         $args = func_get_args();
+        $previous = null;
         switch (count($args)) {
-            case 1:
-                $message = $this->getFromCode($args[0]);
-                $code = (int)$args[0];
-                $previous = null;
-                break;
             case 2:
+            case 3:
                 $message = $args[0];
                 $code = (int)$args[1];
-                $previous = $args[2];
                 break;
             default:
-                $message = $args[0];
+                $message = $this->getFromCode($args[0]);
                 $code = (int)$args[0];
-                $previous = null;
                 break;
+        }
+        foreach ($args as $key => $value) {
+            if ($value instanceof Exception) {
+                $previous = $value;
+            }
         }
 
         parent::__construct($message, $code, $previous);

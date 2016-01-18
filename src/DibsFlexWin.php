@@ -104,7 +104,7 @@ class DibsFlexWin
 
         if ($result_params["result"] != "1000" && $result_params["result"] != "0") {
             $message = isset($result_params["message"]) ? $result_params["message"] : "DECLINED";
-            throw new DibsFlexWinPaymentException($message, $result_params["result"]);
+            throw new DibsFlexWinAuthException($message, $result_params["result"]);
         }
 
         return $result_params;
@@ -398,6 +398,9 @@ class DibsFlexWin
 
         if ($result['status'] == 'ACCEPTED') {
             return $result;
+        }
+        if (isset($result['message'])) {
+            throw new DibsFlexWinPaymentException($result['message'], $result['reason']);
         }
         throw new DibsFlexWinPaymentException($result['reason']);
     }

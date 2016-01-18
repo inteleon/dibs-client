@@ -13,6 +13,11 @@
             "Inteleon\\Dibs\\": "src/"
         }
     },
+    "autoload-dev": {
+        "classmap": [
+            "tests/Exception/FlexWinExceptionTestSuite.php"
+        ]
+    },
     "require": {
         "php": ">=5.3"
     },

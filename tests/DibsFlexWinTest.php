@@ -149,6 +149,55 @@ class DibsFlexWinTest extends TestSuite
 
     /**
      * @test
+     * If declined and callback contains a custom 'message'
+     * use custom dibs message as exception message
+     *
+     * @throws Inteleon\Dibs\Exception\DibsErrorException
+     */
+    public function captureTransactionFailedErrorsInParameter()
+    {
+        $request = Mockery::mock('Inteleon\Dibs\Request\CurlRequest');
+        $client = new DibsFlexWin($this->cfg, $request);
+        $amount = 1000;
+        $orderid = 1;
+        $transact = 1;
+        $request->shouldReceive('to')
+        ->once()
+        ->withArgs(array(
+            'https://payment.architrade.com/cgi-bin/capture.cgi',
+        ))->andReturn($request);
+
+        $request->shouldReceive('post')
+        ->once()
+        ->andReturn($request);
+
+        $request->shouldReceive('get')
+        ->once()
+        ->andReturn(array(
+            'message'   => "Detailed message from dibs",
+            'status'    => 'DECLINED',
+            'transact'  => 'randomCode',
+            'result'    => 3,
+            'cardtype'  => 'VISA',
+            // Error in the parameters sent to the DIBS server.
+            // An additional parameter called "message" is returned,
+            // with a value that may help identifying the error.
+            'reason'    => 2,
+        ));
+        try {
+            $result = $client->captureTransaction($amount, $orderid, $transact);
+            $this->fail('Expected DibsErrorException expcetion');
+        } catch (DibsErrorException $e) {
+            $this->assertRegExp(
+                '/Detailed message from dibs/',
+                $e->getMessage()
+            );
+            $this->assertEquals(2, $e->getCode());
+        }
+    }
+
+    /**
+     * @test
      */
     public function authorizeTicket()
     {
