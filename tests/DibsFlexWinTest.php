@@ -255,8 +255,9 @@ class DibsFlexWinTest extends TestSuite
         $request->shouldReceive('get')
         ->once()
         ->andReturn(array(
-            'reason'  => 'Returns a reason for the rejection.',
-            'status'  => 'DECLINED',
+          'status'  => 'DECLINED',
+          'reason'  => '2',
+          'message' => 'Owner merchant is not allowed to make ticket transactions for target merchant',
         ));
 
         try {
