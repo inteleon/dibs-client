@@ -367,7 +367,10 @@ class DibsFlexWin
         if ($result['status'] == 'ACCEPTED') {
             return $result;
         }
-        throw new DibsFlexWinAuthException($result['message'], $result['reason']);
+        if (isset($result['message'])) {
+            throw new DibsFlexWinAuthException($result['message'], $result['reason']);
+        }
+        throw new DibsFlexWinAuthException($result['reason']);
     }
 
     /**

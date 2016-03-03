@@ -233,7 +233,6 @@ class DibsFlexWinTest extends TestSuite
 
     /**
      * @test
-     * @throws Inteleon\Dibs\Exception\DibsErrorException
      */
     public function authorizeTicketFailed()
     {
@@ -269,6 +268,50 @@ class DibsFlexWinTest extends TestSuite
             $this->fail('Expected DibsErrorException expcetion');
         } catch (\Exception $e) {
             $this->assertInstanceOf('Inteleon\Dibs\Exception\DibsErrorException', $e);
+        }
+    }
+
+    /**
+     * @test
+     * @throws Inteleon\Dibs\Exception\DibsErrorException
+     */
+    public function authorizeTicketFailedWithoutMessage()
+    {
+        $request = Mockery::mock('Inteleon\Dibs\Request\CurlRequest');
+        $client = new DibsFlexWin($this->cfg, $request);
+        $amount = 1000;
+        $orderid = 1;
+        $transact = 1;
+        $request->shouldReceive('to')
+        ->once()
+        ->withArgs(array(
+            'https://payment.architrade.com/cgi-ssl/ticket_auth.cgi',
+        ))->andReturn($request);
+
+        $request->shouldReceive('post')
+        ->once()
+        ->andReturn($request);
+
+        $request->shouldReceive('get')
+        ->once()
+        ->andReturn(array(
+          'status'  => 'DECLINED',
+          'reason'  => '7',
+        ));
+        try {
+            $result = $client->authorizeTicket(
+                $amount,
+                $orderid,
+                $transact
+            );
+            $this->fail('Expected DibsErrorException expcetion');
+        } catch (\Exception $e) {
+            $this->assertInstanceOf('Inteleon\Dibs\Exception\DibsErrorException', $e);
+            $this->assertRegExp(
+                '/The order number \(orderid\) is not unique/',
+                $e->getMessage()
+            );
+            $this->assertEquals(7, $e->getCode());
         }
     }
 
