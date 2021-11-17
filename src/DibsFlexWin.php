@@ -149,6 +149,7 @@ class DibsFlexWin
 
         if ($preauth == true) {
             $params['preauth'] = "true";
+            $params['zero_auth'] = "true";
         }
 
         if (!array_key_exists('maketicket', $params)) {
